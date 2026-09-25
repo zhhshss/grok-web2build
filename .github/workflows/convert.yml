@@ -11,6 +11,10 @@ on:
         description: "matrix 分片索引 JSON 数组"
         required: false
         default: "[0,1,2,3]"
+      max_accounts:
+        description: "每分片最多转换数（冒烟用，0=不限）"
+        required: false
+        default: "0"
       account_key:
         description: "accounts.enc 的 KV key"
         required: false
@@ -63,4 +67,5 @@ jobs:
         env:
           SHARD_INDEX: ${{ matrix.shard }}
           SHARD_COUNT: ${{ inputs.shard_count }}
+          MAX_ACCOUNTS: ${{ inputs.max_accounts }}
         run: python3 convert_worker.py

@@ -114,6 +114,9 @@ def main():
     accounts = json.loads(xor(base64.b64decode(open("accounts.enc", "rb").read())).decode())
     shard_i, shard_n = int(os.environ.get("SHARD_INDEX", "0")), int(os.environ.get("SHARD_COUNT", "1"))
     accounts = [a for i, a in enumerate(accounts) if i % shard_n == shard_i]
+    mx = int(os.environ.get("MAX_ACCOUNTS", "0"))
+    if mx > 0:
+        accounts = accounts[:mx]
     print(f"shard {shard_i}/{shard_n}: {len(accounts)}", flush=True)
     results = []
     for a in accounts:
