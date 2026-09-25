@@ -10,8 +10,12 @@ if ! command -v google-chrome >/dev/null; then
 fi
 # mihomo
 if ! command -v mihomo >/dev/null; then
-  curl -sL https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64-compatible.gz -o /tmp/mihomo.gz
+  URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep -oE 'https://[^"]*mihomo-linux-amd64-v[0-9.]+\.gz' | head -1)
+  [ -z "$URL" ] && URL=$(curl -s https://api.github.com/repos/MetaCubeX/mihomo/releases/latest | grep -oE 'https://[^"]*linux-amd64[^"]*\.gz' | head -1)
+  echo "mihomo url: $URL"
+  curl -sL "$URL" -o /tmp/mihomo.gz
   gunzip -f /tmp/mihomo.gz && sudo install -m755 /tmp/mihomo /usr/local/bin/mihomo
+  mihomo -v || true
 fi
 python -m pip install -q patchright curl_cffi cryptography pyyaml
 python -m patchright install chromium >/dev/null 2>&1 || true
