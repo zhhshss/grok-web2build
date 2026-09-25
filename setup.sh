@@ -26,7 +26,7 @@ sleep 2
 python3 - <<'PY'
 import os, urllib.request, yaml
 url = (f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}"
-       f"/storage/kv/namespaces/{os.environ['KV_NAMESPACE_ID']}/values/web2build:mihomo-config")
+       f"/storage/kv/namespaces/{os.environ['KV_NAMESPACE_ID']}/values/web2build:mihomo-config-gha")
 req = urllib.request.Request(url, headers={"X-Auth-Email": os.environ["CLOUDFLARE_API_EMAIL"],
     "X-Auth-Key": os.environ["CLOUDFLARE_API_KEY"]})
 cfg = yaml.safe_load(urllib.request.urlopen(req, timeout=30).read().decode())
