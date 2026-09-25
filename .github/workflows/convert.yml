@@ -1,0 +1,66 @@
+name: web2build-convert
+
+on:
+  workflow_dispatch:
+    inputs:
+      shard_count:
+        description: "并行分片总数"
+        required: false
+        default: "4"
+      shards:
+        description: "matrix 分片索引 JSON 数组"
+        required: false
+        default: "[0,1,2,3]"
+      account_key:
+        description: "accounts.enc 的 KV key"
+        required: false
+        default: "web2build:accounts"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web2build-convert
+  cancel-in-progress: false
+
+env:
+  CLOUDFLARE_API_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+  CLOUDFLARE_API_EMAIL: ${{ secrets.CLOUDFLARE_API_EMAIL }}
+  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+  KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
+  XOR_KEY_B64: ${{ secrets.XOR_KEY_B64 }}
+  DISPLAY: :99
+  CONVERT_PROXY: http://127.0.0.1:7890
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.shards) }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 环境准备（Chrome/Xvfb/mihomo）
+        run: bash setup.sh
+      - name: 拉取加密账号包
+        env:
+          ACCOUNT_KEY: ${{ inputs.account_key }}
+        run: |
+          python3 - <<'PY'
+          import os, urllib.request
+          url = (f"https://api.cloudflare.com/client/v4/accounts/{os.environ['CLOUDFLARE_ACCOUNT_ID']}"
+                 f"/storage/kv/namespaces/{os.environ['KV_NAMESPACE_ID']}/values/{os.environ['ACCOUNT_KEY']}")
+          req = urllib.request.Request(url, headers={
+              "X-Auth-Email": os.environ["CLOUDFLARE_API_EMAIL"],
+              "X-Auth-Key": os.environ["CLOUDFLARE_API_KEY"]})
+          data = urllib.request.urlopen(req, timeout=30).read()
+          open("accounts.enc", "wb").write(data)
+          print("accounts.enc", len(data), "bytes")
+          PY
+      - name: 运行转换
+        env:
+          SHARD_INDEX: ${{ matrix.shard }}
+          SHARD_COUNT: ${{ inputs.shard_count }}
+        run: python3 convert_worker.py
