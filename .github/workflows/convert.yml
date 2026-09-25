@@ -15,6 +15,10 @@ on:
         description: "每分片最多转换数（冒烟用，0=不限）"
         required: false
         default: "0"
+      use_proxy:
+        description: "是否启用 mihomo 代理（false=GHA 直连）"
+        required: false
+        default: "false"
       account_key:
         description: "accounts.enc 的 KV key"
         required: false
@@ -34,7 +38,7 @@ env:
   KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
   XOR_KEY_B64: ${{ secrets.XOR_KEY_B64 }}
   DISPLAY: :99
-  CONVERT_PROXY: http://127.0.0.1:7890
+  CONVERT_PROXY: ${{ inputs.use_proxy == 'true' && 'http://127.0.0.1:7890' || 'direct' }}
 
 jobs:
   convert:
@@ -47,6 +51,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: 环境准备（Chrome/Xvfb/mihomo）
+        env:
+          USE_PROXY: ${{ inputs.use_proxy == 'true' && '1' || '0' }}
         run: bash setup.sh
       - name: 拉取加密账号包
         env:

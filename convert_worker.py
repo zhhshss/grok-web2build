@@ -9,7 +9,9 @@ curl_cffi poll token。结果（access/refresh/expires）XOR 加密写 KV。
 import asyncio, base64, hashlib, json, os, sys, time, secrets, urllib.request
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
-PROXY_URL = os.environ.get("CONVERT_PROXY", "http://127.0.0.1:7890")
+PROXY_URL = os.environ.get("CONVERT_PROXY", "http://127.0.0.1:7890").strip()
+if PROXY_URL.lower() in ("", "direct", "none"):
+    PROXY_URL = None
 CLIENT_ID = "b1a00492-073a-47ea-816f-4c329264a828"
 SCOPE = "openid profile email offline_access grok-cli:access api:access conversations:read conversations:write"
 
@@ -34,7 +36,7 @@ async def approve_via_browser(sso, user_code):
     async with async_playwright() as pw:
         browser = await pw.chromium.launch(
             executable_path="/usr/bin/google-chrome", headless=False,
-            proxy={"server": PROXY_URL},
+            proxy=({"server": PROXY_URL} if PROXY_URL else None),
             args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-blink-features=AutomationControlled"])
         try:
             ctx = await browser.new_context(
@@ -80,7 +82,7 @@ async def approve_via_browser(sso, user_code):
 
 def convert_one(sso):
     from curl_cffi import requests as cr
-    P = {"http": PROXY_URL, "https": PROXY_URL}
+    P = ({"http": PROXY_URL, "https": PROXY_URL} if PROXY_URL else None)
     s = cr.Session(impersonate="chrome131")
     s.cookies.set("sso", sso, domain=".x.ai"); s.cookies.set("sso-rw", sso, domain=".x.ai")
     r = s.post("https://auth.x.ai/oauth2/device/code", data={"client_id": CLIENT_ID, "scope": SCOPE}, proxies=P, timeout=30)
